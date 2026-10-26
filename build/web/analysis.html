@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow | Analysis</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #101522;
+            color: #f1f5f9;
+        }
+
+        header {
+            padding: 22px 7%;
+            background: #181f30;
+            border-bottom: 1px solid #2b3448;
+        }
+
+        header h1 {
+            color: #a5b4fc;
+            margin: 0;
+        }
+
+        header p {
+            color: #a5afc3;
+            margin-bottom: 0;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 7%;
+            background: #181f30;
+        }
+
+        nav a {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        nav a:hover,
+        nav a.active {
+            background: #303b55;
+            color: white;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: #1b2334;
+            border: 1px solid #30394d;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 24px;
+        }
+
+        .card p {
+            color: #a5afc3;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        #message {
+            color: #a5b4fc;
+        }
+
+        footer {
+            text-align: center;
+            padding: 25px;
+            color: #8590a6;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>FocusFlow</h1>
+        <p>Your productivity analysis</p>
+    </header>
+
+    <nav>
+        <a href="index.html">Dashboard</a>
+        <a href="analysis.html" class="active">Analysis</a>
+        <a href="habits.html">Habits</a>
+        <a href="tasks.html">Tasks</a>
+    </nav>
+
+    <main>
+        <h2>Monthly Productivity</h2>
+        <p style="color:#a5afc3">
+            Track your daily focused hours this month.
+        </p>
+
+        <div class="card">
+            <h3>Daily Focus Hours</h3>
+            <p>Productive time recorded by your Pomodoro timer.</p>
+
+            <div class="chart-container">
+                <canvas id="productivityChart"></canvas>
+            </div>
+
+            <p id="message">Loading productivity data...</p>
+        </div>
+    </main>
+
+    <footer>
+        FocusFlow | Student Productivity & Habit Tracker
+    </footer>
+
+    <script>
+        fetch("monthlyData")
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("Could not load chart data.");
+                }
+                return response.json();
+            })
+            .then(function (data) {
+
+                document.getElementById("message").textContent =
+                    "Each bar shows total focused hours for that date.";
+
+                new Chart(
+                    document.getElementById("productivityChart"),
+                    {
+                        type: "bar",
+
+                        data: {
+                            labels: data.labels,
+
+                            datasets: [{
+                                label: "Focused Hours",
+                                data: data.hours,
+                                backgroundColor: "#818cf8",
+                                borderRadius: 5
+                            }]
+                        },
+
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+
+                            plugins: {
+                                legend: {
+                                    labels: {
+                                        color: "#f1f5f9"
+                                    }
+                                }
+                            },
+
+                            scales: {
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: "Day of Month",
+                                        color: "#cbd5e1"
+                                    },
+                                    ticks: {
+                                        color: "#a5afc3"
+                                    },
+                                    grid: {
+                                        color: "#30394d"
+                                    }
+                                },
+
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: "Hours",
+                                        color: "#cbd5e1"
+                                    },
+                                    ticks: {
+                                        color: "#a5afc3"
+                                    },
+                                    grid: {
+                                        color: "#30394d"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                );
+            })
+            .catch(function (error) {
+                document.getElementById("message").textContent =
+                    "Could not load the chart. Check the server and connection.";
+                console.log(error);
+            });
+    </script>
+
+</body>
+</html>

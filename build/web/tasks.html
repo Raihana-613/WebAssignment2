@@ -1,0 +1,414 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FocusFlow | Tasks</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #101522;
+    color: #f1f5f9;
+}
+
+header, nav { background: #181f30; padding: 20px 7%; }
+
+header h1 { margin: 0; color: #a5b4fc; }
+header p { color: #a5afc3; margin-bottom: 0; }
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 0;
+}
+
+nav a {
+    color: #cbd5e1;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+nav a:hover, nav a.active {
+    background: #303b55;
+    color: white;
+}
+
+main { max-width: 950px; margin: 30px auto; padding: 0 18px; }
+
+.card {
+    background: #1b2334;
+    border: 1px solid #30394d;
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 22px;
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    background: #101522;
+    color: white;
+    border: 1px solid #46516a;
+    border-radius: 8px;
+    margin: 7px 0 15px;
+}
+
+label { color: #cbd5e1; }
+
+button {
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 7px;
+    background: #818cf8;
+    color: #101522;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:disabled { opacity: 0.5; }
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+}
+
+.task {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid #30394d;
+}
+
+.task:last-child { border-bottom: 0; }
+
+.task-info { flex: 1; min-width: 0; }
+
+.task-title {
+    font-weight: bold;
+    overflow-wrap: anywhere;
+}
+
+.task.completed .task-title {
+    text-decoration: line-through;
+    color: #8590a6;
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 8px;
+}
+
+.badge {
+    background: #30394d;
+    color: #cbd5e1;
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.priority-high { background: #7f1d1d; color: #fee2e2; }
+.priority-medium { background: #713f12; color: #fef3c7; }
+.priority-low { background: #164e63; color: #cffafe; }
+
+.delete-btn {
+    background: #30394d;
+    color: #fca5a5;
+}
+
+#message { color: #a5b4fc; }
+
+footer { text-align: center; padding: 25px; color: #8590a6; }
+
+@media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; gap: 0; }
+    .task { align-items: flex-start; }
+    .task button { padding: 8px; }
+}
+</style>
+</head>
+
+<body>
+<header>
+    <h1>FocusFlow</h1>
+    <p>Plan your work. Finish one task at a time.</p>
+</header>
+
+<nav>
+    <a href="index.html">Dashboard</a>
+    <a href="analysis.html">Analysis</a>
+    <a href="habits.html">Habits</a>
+    <a href="tasks.html" class="active">Tasks</a>
+</nav>
+
+<main>
+    <h2>My Tasks</h2>
+    <p style="color:#a5afc3">
+        Add a task, choose its category and set its priority.
+    </p>
+
+    <section class="card">
+        <h3>Add a New Task</h3>
+
+        <form id="taskForm">
+            <label for="title">Task name</label>
+            <input id="title" maxlength="200"
+                   placeholder="e.g. Complete web technology assignment"
+                   required>
+
+            <div class="form-grid">
+                <div>
+                    <label for="category">Category</label>
+                    <input id="category" maxlength="100"
+                           placeholder="e.g. College">
+                </div>
+
+                <div>
+                    <label for="priority">Priority</label>
+                    <select id="priority">
+                        <option value="High">High</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+
+                <div style="display:flex;align-items:center">
+                    <button type="submit" style="width:100%">
+                        + Add Task
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <p id="message"></p>
+    </section>
+
+    <section class="card">
+        <h3>Your To-Do List</h3>
+
+        <label for="filter">Show tasks:</label>
+        <select id="filter">
+            <option value="all">All tasks</option>
+            <option value="pending">Pending tasks</option>
+            <option value="completed">Completed tasks</option>
+        </select>
+
+        <div id="taskList">Loading tasks...</div>
+    </section>
+</main>
+
+<footer>FocusFlow | Student Productivity &amp; Habit Tracker</footer>
+
+<script>
+const taskList = document.getElementById("taskList");
+const message = document.getElementById("message");
+const filter = document.getElementById("filter");
+
+let tasks = [];
+
+function showMessage(text) {
+    message.textContent = text;
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, function(ch) {
+        return {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[ch];
+    });
+}
+
+async function loadTasks() {
+    taskList.textContent = "Loading tasks...";
+
+    try {
+        const response = await fetch("tasks");
+
+        if (!response.ok) throw new Error("Could not load tasks");
+
+        tasks = await response.json();
+        renderTasks();
+
+    } catch (error) {
+        taskList.textContent = "Could not load tasks. Check the server.";
+        console.log(error);
+    }
+}
+
+function renderTasks() {
+    const selected = filter.value;
+
+    const visibleTasks = tasks.filter(function(task) {
+        if (selected === "pending") return !task.completed;
+        if (selected === "completed") return task.completed;
+        return true;
+    });
+
+    if (visibleTasks.length === 0) {
+        taskList.textContent = "No tasks here yet. Add one above!";
+        return;
+    }
+
+    taskList.innerHTML = "";
+
+    visibleTasks.forEach(function(task) {
+        const row = document.createElement("div");
+        row.className = "task" + (task.completed ? " completed" : "");
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.completed;
+        checkbox.style.width = "20px";
+        checkbox.style.margin = "0";
+        checkbox.setAttribute("aria-label", "Mark task completed");
+
+        checkbox.addEventListener("change", async function() {
+            checkbox.disabled = true;
+
+            const ok = await updateTask(
+                "toggle", task.id, checkbox.checked
+            );
+
+            if (!ok) checkbox.checked = task.completed;
+            checkbox.disabled = false;
+        });
+
+        const info = document.createElement("div");
+        info.className = "task-info";
+
+        const title = document.createElement("div");
+        title.className = "task-title";
+        title.textContent = task.title;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const category = document.createElement("span");
+        category.className = "badge";
+        category.textContent = task.category || "General";
+
+        const priority = document.createElement("span");
+        priority.className = "badge priority-" +
+            task.priority.toLowerCase();
+        priority.textContent = task.priority;
+
+        meta.appendChild(category);
+        meta.appendChild(priority);
+        info.appendChild(title);
+        info.appendChild(meta);
+
+        const del = document.createElement("button");
+        del.className = "delete-btn";
+        del.textContent = "Delete";
+        del.addEventListener("click", async function() {
+            if (!confirm("Delete this task?")) return;
+            del.disabled = true;
+            await updateTask("delete", task.id, false);
+        });
+
+        row.appendChild(checkbox);
+        row.appendChild(info);
+        row.appendChild(del);
+
+        taskList.appendChild(row);
+    });
+}
+
+async function updateTask(action, id, completed) {
+    const body = new URLSearchParams();
+    body.append("action", action);
+    body.append("id", id);
+
+    if (action === "toggle") {
+        body.append("completed", completed);
+    }
+
+    try {
+        const response = await fetch("tasks", {
+            method: "POST",
+            headers: {
+                "Content-Type":
+                    "application/x-www-form-urlencoded"
+            },
+            body: body.toString()
+        });
+
+        if (!response.ok) throw new Error("Could not update task");
+
+        showMessage(action === "delete"
+            ? "Task deleted."
+            : "Task updated.");
+
+        await loadTasks();
+        return true;
+
+    } catch (error) {
+        showMessage("Could not update task. Please try again.");
+        console.log(error);
+        await loadTasks();
+        return false;
+    }
+}
+
+document.getElementById("taskForm").addEventListener(
+    "submit", async function(event) {
+        event.preventDefault();
+
+        const title = document.getElementById("title").value.trim();
+        let category = document.getElementById("category").value.trim();
+        const priority = document.getElementById("priority").value;
+
+        if (!title) return;
+        if (!category) category = "General";
+
+        const body = new URLSearchParams();
+        body.append("action", "add");
+        body.append("title", title);
+        body.append("category", category);
+        body.append("priority", priority);
+
+        try {
+            const response = await fetch("tasks", {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded"
+                },
+                body: body.toString()
+            });
+
+            if (!response.ok) throw new Error("Could not add task");
+
+            document.getElementById("title").value = "";
+            document.getElementById("category").value = "";
+
+            showMessage("Task added successfully.");
+            await loadTasks();
+
+        } catch (error) {
+            showMessage("Could not add task. Check the server.");
+            console.log(error);
+        }
+    }
+);
+
+filter.addEventListener("change", renderTasks);
+
+loadTasks();
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusFlow | Student Productivity</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #101522;
+            color: #f1f5f9;
+        }
+
+        header {
+            padding: 22px 7%;
+            background: #181f30;
+            border-bottom: 1px solid #2b3448;
+        }
+
+        header h1 {
+            margin: 0;
+            color: #a5b4fc;
+        }
+
+        header p {
+            margin-bottom: 0;
+            color: #a5afc3;
+        }
+
+        nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 16px 7%;
+            background: #181f30;
+        }
+
+        nav a {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        nav a.active,
+        nav a:hover {
+            background: #303b55;
+            color: white;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 35px auto;
+            padding: 0 20px;
+        }
+
+        .welcome {
+            margin-bottom: 25px;
+        }
+
+        .welcome p {
+            color: #a5afc3;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit, minmax(230px, 1fr)
+            );
+            gap: 20px;
+        }
+
+        .card {
+            background: #1b2334;
+            border: 1px solid #30394d;
+            border-radius: 16px;
+            padding: 25px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .timer {
+            text-align: center;
+        }
+
+        #time {
+            font-size: 48px;
+            font-weight: bold;
+            color: #a5b4fc;
+            margin: 25px 0;
+        }
+
+        button {
+            background: #818cf8;
+            color: #101522;
+            border: none;
+            padding: 11px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 4px;
+        }
+
+        button:hover {
+            background: #a5b4fc;
+        }
+
+        .secondary {
+            background: #30394d;
+            color: white;
+        }
+
+        .stat {
+            font-size: 30px;
+            font-weight: bold;
+            color: #a5b4fc;
+        }
+
+        footer {
+            text-align: center;
+            color: #8590a6;
+            padding: 25px;
+        }
+
+        @media (max-width: 500px) {
+            header {
+                padding: 20px;
+            }
+
+            nav {
+                padding: 12px;
+                gap: 4px;
+            }
+
+            main {
+                margin-top: 25px;
+                padding: 0 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>FocusFlow</h1>
+        <p>Your student productivity companion</p>
+    </header>
+
+    <nav>
+        <a href="index.html" class="active">Dashboard</a>
+        <a href="analysis.html">Analysis</a>
+        <a href="habits.html">Habits</a>
+        <a href="tasks.html">Tasks</a>
+    </nav>
+
+    <main>
+        <section class="welcome">
+            <h2>Welcome back! 👋</h2>
+            <p>Small steps every day lead to big achievements.</p>
+        </section>
+
+        <section class="cards">
+
+            <div class="card timer">
+                <h3>Pomodoro Timer</h3>
+                <p id="mode">Focus time</p>
+
+                <div id="time">25:00</div>
+
+                <button onclick="startTimer()">Start</button>
+                <button class="secondary"
+                        onclick="pauseTimer()">Pause</button>
+                <button class="secondary"
+                        onclick="resetTimer()">Reset</button>
+            </div>
+
+            <div class="card">
+                <h3>Today's Productivity</h3>
+                <p class="stat" id="total">0 min</p>
+                <p>Focused time completed today</p>
+            </div>
+
+        </section>
+    </main>
+
+    <footer>
+        FocusFlow | Student Productivity & Habit Tracker
+    </footer>
+
+    <script>
+        let seconds = 25 * 60;
+        let timerId = null;
+        let isFocus = true;
+
+        function showTime() {
+            let minutes = Math.floor(seconds / 60);
+            let remainingSeconds = seconds % 60;
+
+            document.getElementById("time").textContent =
+                String(minutes).padStart(2, "0") + ":" +
+                String(remainingSeconds).padStart(2, "0");
+        }
+        
+        
+function loadTodayTotal() {
+    fetch("todayTotal")
+        .then(response => {
+            if (!response.ok) {
+                throw new Error("Could not load total");
+            }
+            return response.text();
+        })
+        .then(minutes => {
+            document.getElementById("total").textContent =
+                minutes + " min";
+        })
+        .catch(error => {
+            console.log(error);
+        });
+}
+
+function saveFocusSession() {
+    fetch("saveSession", {
+        method: "POST"
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Could not save session");
+        }
+
+        loadTodayTotal();
+        alert("Focus session saved successfully!");
+    })
+    .catch(error => {
+        alert("Could not save session. Please check the server.");
+        console.log(error);
+    });
+}
+
+        
+        function startTimer() {
+            if (timerId !== null) {
+                return;
+            }
+
+            timerId = setInterval(function () {
+                seconds--;
+                showTime();
+
+                if (seconds <= 0) {
+                    clearInterval(timerId);
+                    timerId = null;
+
+                    if (isFocus) {
+                        saveFocusSession();
+
+                        isFocus = false;
+                        seconds = 5 * 60;
+
+                        document.getElementById("mode").textContent =
+                            "Break time";
+                    } else {
+                        alert("Break completed!");
+                        isFocus = true;
+                        seconds = 25 * 60;
+
+                        document.getElementById("mode").textContent =
+                            "Focus time";
+                    }
+
+                    showTime();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            clearInterval(timerId);
+            timerId = null;
+        }
+
+        function resetTimer() {
+            pauseTimer();
+
+            isFocus = true;
+            seconds = 25 * 60;
+
+            document.getElementById("mode").textContent =
+                "Focus time";
+
+            showTime();
+        }
+
+        showTime();
+        loadTodayTotal();
+    </script>
+</body>
+</html>
